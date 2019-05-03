@@ -1,4 +1,4 @@
-import {Sprite, Tween, Timer, Ease, TextField} from 'black-engine';
+import {Sprite, Tween, Interpolation, Ease, TextField} from 'black-engine';
 import Data from '../suit3-engine/data';
 import config from './config';
 
@@ -96,30 +96,18 @@ export default class Piece extends Sprite {
 
   fall(cb) {
     const {fallPath, fallDelay} = this.data;
-    const stepTime = 0.2;
+    const stepTime = 0.1;
 
-    const step = (i = 0) => {
-      if (fallPath.x[i] === undefined) {
-        cb();
-        return;
-      }
+    const tween = new Tween({
+      x: fallPath.x.map(v => v * hOffset),
+      y: fallPath.y.map(v => v * vOffset),
+    }, stepTime * fallPath.x.length);
 
-      const x = fallPath.x[i] * hOffset;
-      const y = fallPath.y[i] * vOffset;
-
-      const tween = new Tween(this).to({x, y}, stepTime);
-      tween.ease = Ease.linear;
-      tween.on('complete', () => step(i + 1));
-      this.addComponent(tween);
-    };
-
-    if (fallDelay === 0) {
-      step();
-    } else {
-      const timer = new Timer(stepTime * fallDelay);
-      timer.on('complete', () => step());
-      this.addComponent(timer);
-    }
+    tween.ease = Ease.linear;
+    tween.interpolation = Interpolation.linear;
+    tween.delay = stepTime * fallDelay;
+    tween.on('complete', cb);
+    this.addComponent(tween);
   }
 
   afterShuffle(cb) {

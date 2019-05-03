@@ -1,5 +1,5 @@
 import {Suit3} from '../suit3-engine/suit3-engine';
-import {DisplayObject, Black} from 'black-engine';
+import {DisplayObject} from 'black-engine';
 import Piece from './piece';
 import config from 'js/board-screen/config';
 

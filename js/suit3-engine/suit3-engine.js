@@ -277,12 +277,20 @@ class Suit3 extends Dispatcher {
       }
 
       if (this.normalize()) {
-        return async.each(this.items, (data, eachCb) => data.afterShuffle(wrap(eachCb)), cb);
+        return async.each(
+          this.items,
+          (data, eachCb) => data.afterShuffle(wrap(eachCb)),
+          () => this.setReady(),
+        );
       }
 
-      this.post(this.READY);
-      this._ready = true;
+      this.setReady();
     });
+  }
+
+  setReady() {
+    this.post(this.READY);
+    this._ready = true;
   }
 
   normalize(checkMatches = false) {
@@ -317,7 +325,7 @@ class Suit3 extends Dispatcher {
     const hash = {};
 
     for (let i = 0, length = items.length, len2 = length * 2; i < len2; i++) {
-      const data = items[i % length];
+      const data = items[i] || items[i - length];
       data.fallDelay = 0;
 
       while (true) {
@@ -360,27 +368,30 @@ class Suit3 extends Dispatcher {
       colsMap[data.col].push(data);
     }
 
-    const keys = Object.keys(colsMap);
-
-    for (let i = 0, key; i < keys.length; i++) {
-      key = keys[i];
-
+    for (const key in colsMap) {
       colsMap[key]
-        .sort((a, b) => b.row - a.row)
-        .forEach((data, index) => data.fallDelay = index);
+        .sort(Suit3.sort)
+        .forEach(Suit3.setFallDelay);
     }
 
     return movedItems;
   }
 
+  static sort(a, b) {
+    return b.row - a.row;
+  }
+
+  static setFallDelay(data, index) {
+    data.fallDelay = index;
+  }
+
   shuffle() {
     const {items} = this;
     const length = items.length;
-    const leftLen = Math.floor(length / 2);
-    const rightLen = length - leftLen;
 
-    for (let i = 0; i < leftLen; i++) {
-      this.swap(items[i], items[Math.floor(Math.random() * rightLen + leftLen)]);
+    for (let i = 0, newIndex; i < length; i++) {
+      newIndex = Math.floor(Math.random() * length);
+      newIndex !== i && this.swap(items[i], items[newIndex]);
     }
   }
 
