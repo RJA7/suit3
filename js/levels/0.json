@@ -1,0 +1,109 @@
+{
+  "colors": 3,
+  "grid": [
+    [
+      {
+        "color": 0,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 6
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      }
+    ],
+    [
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 3,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      }
+    ],
+    [
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 3,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 0,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      }
+    ],
+    [
+      {
+        "color": 3,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 0,
+        "type": 0
+      },
+      {
+        "color": 1,
+        "type": 0
+      },
+      {
+        "color": 2,
+        "type": 0
+      }
+    ]
+  ]
+}

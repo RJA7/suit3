@@ -3,12 +3,14 @@ import {DisplayObject} from 'black-engine';
 import Piece from './piece';
 import config from 'js/board-screen/config';
 
+import level from '../levels/0';
+
 export class Board extends DisplayObject {
   constructor(parent) {
     super(parent);
     parent.add(this);
 
-    const suit3 = new Suit3(config);
+    const suit3 = new Suit3(level);
     const {items} = suit3;
 
     for (let i = 0, length = items.length; i < length; i++) {

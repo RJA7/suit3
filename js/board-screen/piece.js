@@ -91,6 +91,7 @@ export default class Piece extends Sprite {
       [Data.type.DIAGONAL]: 'X',
       [Data.type.ROOK]: '+',
       [Data.type.BOMB]: 'B',
+      [Data.type.DROP]: '↓'
     }[this.data.type];
   }
 

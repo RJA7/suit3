@@ -3,13 +3,13 @@ import {MessageDispatcher} from 'black-engine';
 let id = 0;
 
 export default class Data extends MessageDispatcher {
-  constructor(row, col, color) {
+  constructor(row, col, color, type) {
     super();
 
     this.id = ++id;
     this.sprite = null;
     this.color = color;
-    this.type = Data.type.DEFAULT;
+    this.type = type;
     this.row = row;
     this.col = col;
 
@@ -65,6 +65,7 @@ Data.type = {
   DIAGONAL: 3, // Spawn on matched L pattern. Destroy all in same diagonals
   ROOK: 4, // Spawn on matched T or + pattern. Destroy all in same row and col
   BOMB: 5, // Spawn on matched 5 items. Destroy all around, king like
+  DROP: 6, // Destroys itself on any bottom cell.
 
   // Dynamic (not used as type for data). No spawn, just destroy behaviour description
   QUEEN: 10, // on swap VERTICAL+HORIZONTAL. Destroy like queen

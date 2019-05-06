@@ -2,24 +2,34 @@ import Dispatcher from './dispatcher';
 import async from 'async';
 import Data from './data';
 import Pattern from 'js/suit3-engine/patterns/pattern';
+import TPattern from 'js/suit3-engine/patterns/t-pattern';
+import LPattern from 'js/suit3-engine/patterns/l-pattern';
+import ColorPattern from 'js/suit3-engine/patterns/color';
 
 const wrap = cb => () => cb();
 
+const patterns = [
+  new TPattern(),
+  new LPattern(),
+  new ColorPattern(),
+];
+
 class Suit3 extends Dispatcher {
-  constructor(config) {
+  constructor(level) {
     super();
 
-    const {colors, rows, cols, grid, patterns} = config;
+    const {colors, grid} = level;
     const model = [];
     const items = [];
-    const getColor = grid ? (i, j) => grid[i][j] : () => Math.random() * colors | 0;
+    const rows = grid.length;
+    const cols = grid.reduce((acc, v) => Math.max(acc, v.length), 0);
 
-    for (let i = 0, color, data; i < rows; i++) {
+    for (let i = 0, data; i < rows; i++) {
       model[i] = [];
 
       for (let j = 0; j < cols; j++) {
-        color = getColor(i, j);
-        data = color === null ? null : new Data(i, j, color);
+        const color = grid[i][j].color;
+        data = color === null ? null : new Data(i, j, color, grid[i][j].type);
         data ? items.push(data) : '';
         model[i][j] = data;
       }
@@ -32,8 +42,6 @@ class Suit3 extends Dispatcher {
     this.model = model;
     this.items = items;
     this.patterns = patterns;
-
-    this.normalize(true);
   }
 
   move(data1, data2) {
@@ -62,6 +70,21 @@ class Suit3 extends Dispatcher {
     const matches = [];
     const hash = {};
 
+    // Drops check. Add all to hash so they cannot be destroyed
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const data = model[i][j];
+
+        if (!data || data.type !== Data.type.DROP) continue;
+
+        hash[data.id] = true;
+
+        if (!model[data.row + 1]) {
+          matches.push({items: [data]});
+        }
+      }
+    }
+
     if (dataA && dataB) {
 
       // Destroy full board
@@ -77,14 +100,14 @@ class Suit3 extends Dispatcher {
         dataA.type === Data.type.DIAGONAL && dataB.type === Data.type.HORIZONTAL
       ) {
         const items = [
-          ...this.collectDirection(data, 0, -1, hash),
-          ...this.collectDirection(data, 1, 0, hash),
-          ...this.collectDirection(data, 0, 1, hash),
-          ...this.collectDirection(data, -1, 0, hash),
-          ...this.collectDirection(data, -1, -1, hash),
-          ...this.collectDirection(data, 1, -1, hash),
-          ...this.collectDirection(data, 1, 1, hash),
-          ...this.collectDirection(data, -1, 1, hash),
+          ...this.collectDirection(dataB, 0, -1, hash),
+          ...this.collectDirection(dataB, 1, 0, hash),
+          ...this.collectDirection(dataB, 0, 1, hash),
+          ...this.collectDirection(dataB, -1, 0, hash),
+          ...this.collectDirection(dataB, -1, -1, hash),
+          ...this.collectDirection(dataB, 1, -1, hash),
+          ...this.collectDirection(dataB, 1, 1, hash),
+          ...this.collectDirection(dataB, -1, 1, hash),
         ];
 
         Pattern.markHash(items, hash);
@@ -92,6 +115,7 @@ class Suit3 extends Dispatcher {
       }
     }
 
+    // Patterns check
     for (let k = 0, l = patterns.length; k < l; k++) {
       const pattern = patterns[k];
 
@@ -120,10 +144,12 @@ class Suit3 extends Dispatcher {
       }
     }
 
+    // Remove from explosion
     for (let i = 0, iLen = matches.length; i < iLen; i++) {
       const match = matches[i];
-      const items = match.items;
       const collectedItems = [];
+      const items = [...match.items];
+      match.target && items.push(match.target.data);
 
       for (let j = 0, jLen = items.length; j < jLen; j++) {
         const collected = this.collectAfterDestroyers(items[j], hash);
@@ -293,15 +319,14 @@ class Suit3 extends Dispatcher {
     this._ready = true;
   }
 
-  normalize(checkMatches = false) {
+  normalize() {
     let wasNormalized = false;
-    let n = 9999;
+    let n = 999;
 
-    while (!this.findMove() || (checkMatches && this.match())) {
+    while (!this.findMove()) {
       if (n-- === 0) throw new Error('Try better config!');
       this.shuffle();
       wasNormalized = true;
-      checkMatches = true;
     }
 
     return wasNormalized;
