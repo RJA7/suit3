@@ -1,13 +1,13 @@
 import {Sprite, Tween, Interpolation, Ease, TextField} from 'black-engine';
-import Data from '../suit3-engine/data';
+import Tile from '../suit3-engine/tile';
 import config from './config';
 
 const hOffset = config.hOffset;
 const vOffset = config.vOffset;
 
 export default class Piece extends Sprite {
-  constructor(parent, data) {
-    super(`piece_${data.color}`);
+  constructor(parent, tile) {
+    super(`piece_${tile.color}`);
     parent.add(this);
 
     const infoText = new TextField('', 'Arial', 0xffffff, 36);
@@ -19,30 +19,30 @@ export default class Piece extends Sprite {
     this.add(infoText);
 
     this.infoText = infoText;
-    this.data = data;
-    this.x = data.col * hOffset;
-    this.y = data.row * vOffset;
+    this.tile = tile;
+    this.x = tile.col * hOffset;
+    this.y = tile.row * vOffset;
     this.alignAnchor();
 
-    data.setSprite(this);
+    tile.setSprite(this);
     this.refreshText();
   }
 
   move(cb) {
-    const data = this.data;
+    const tile = this.tile;
 
     const tween = new Tween(this)
-      .to({x: data.col * hOffset, y: data.row * vOffset}, 0.2);
+      .to({x: tile.col * hOffset, y: tile.row * vOffset}, 0.2);
 
     tween.on('complete', cb);
     this.addComponent(tween);
   }
 
   fake(cb) {
-    const data = this.data;
+    const tile = this.tile;
 
     const tween = new Tween(this)
-      .to({x: data.col * hOffset, y: data.row * vOffset}, 0.2);
+      .to({x: tile.col * hOffset, y: tile.row * vOffset}, 0.2);
     tween.yoyo = true;
     tween.repeats = 1;
     tween.on('complete', cb);
@@ -58,8 +58,8 @@ export default class Piece extends Sprite {
   kill(match, cb) {
     if (match.target) {
       const tween = new Tween(this).to({
-        x: match.target.data.col * hOffset,
-        y: match.target.data.row * vOffset,
+        x: match.target.tile.col * hOffset,
+        y: match.target.tile.row * vOffset,
       }, 0.2);
       tween.on('complete', () => this.hide(cb));
       this.addComponent(tween);
@@ -75,28 +75,28 @@ export default class Piece extends Sprite {
   }
 
   revive() {
-    this.x = this.data.col * hOffset;
-    this.y = (this.data.row - 1) * vOffset;
+    this.x = this.tile.col * hOffset;
+    this.y = (this.tile.row - 1) * vOffset;
     this.alpha = 1;
-    this.textureName = `piece_${this.data.color}`;
+    this.textureName = `piece_${this.tile.color}`;
 
     this.refreshText();
   }
 
   refreshText() {
     this.infoText.text = {
-      [Data.type.DEFAULT]: '',
-      [Data.type.HORIZONTAL]: '-',
-      [Data.type.VERTICAL]: '|',
-      [Data.type.DIAGONAL]: 'X',
-      [Data.type.ROOK]: '+',
-      [Data.type.BOMB]: 'B',
-      [Data.type.DROP]: '↓'
-    }[this.data.type];
+      [Tile.type.DEFAULT]: '',
+      [Tile.type.HORIZONTAL]: '-',
+      [Tile.type.VERTICAL]: '|',
+      [Tile.type.DIAGONAL]: 'X',
+      [Tile.type.ROOK]: '+',
+      [Tile.type.BOMB]: 'B',
+      [Tile.type.DROP]: '↓'
+    }[this.tile.type];
   }
 
   fall(cb) {
-    const {fallPath, fallDelay} = this.data;
+    const {fallPath, fallDelay} = this.tile;
     const stepTime = 0.1;
 
     const tween = new Tween({
@@ -112,11 +112,11 @@ export default class Piece extends Sprite {
   }
 
   afterShuffle(cb) {
-    const data = this.data;
+    const tile = this.tile;
 
     const tween = new Tween(this).to({
-      x: data.col * hOffset,
-      y: data.row * vOffset,
+      x: tile.col * hOffset,
+      y: tile.row * vOffset,
     }, 0.4);
     tween.on('complete', cb);
     this.addComponent(tween);

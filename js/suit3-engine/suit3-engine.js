@@ -1,6 +1,6 @@
 import Dispatcher from './dispatcher';
 import async from 'async';
-import Data from './data';
+import Tile from './tile';
 import Pattern from 'js/suit3-engine/patterns/pattern';
 import TPattern from 'js/suit3-engine/patterns/t-pattern';
 import LPattern from 'js/suit3-engine/patterns/l-pattern';
@@ -24,14 +24,14 @@ class Suit3 extends Dispatcher {
     const rows = grid.length;
     const cols = grid.reduce((acc, v) => Math.max(acc, v.length), 0);
 
-    for (let i = 0, data; i < rows; i++) {
+    for (let i = 0, tile; i < rows; i++) {
       model[i] = [];
 
       for (let j = 0; j < cols; j++) {
         const color = grid[i][j].color;
-        data = color === null ? null : new Data(i, j, color, grid[i][j].type);
-        data ? items.push(data) : '';
-        model[i][j] = data;
+        tile = color === null ? null : new Tile(i, j, color, grid[i][j].type);
+        tile ? items.push(tile) : '';
+        model[i][j] = tile;
       }
     }
 
@@ -44,28 +44,28 @@ class Suit3 extends Dispatcher {
     this.patterns = patterns;
   }
 
-  move(data1, data2) {
-    if (!this._ready || !Suit3.isNeighbor(data1, data2)) return;
+  move(tileA, tileB) {
+    if (!this._ready || !Suit3.isNeighbor(tileA, tileB)) return;
     this._ready = false;
 
-    this.swap(data1, data2);
+    this.swap(tileA, tileB);
 
-    const matches = this.match(data1, data2);
+    const matches = this.match(tileA, tileB);
     const method = matches ? 'move' : 'fake';
     const event = matches ? this.MOVE : this.FAKE;
-    const items = [data1, data2];
+    const items = [tileA, tileB];
     const cb = matches ? () => this.kill(matches) : () => {
-      this.swap(data1, data2);
+      this.swap(tileA, tileB);
       this._ready = true;
     };
 
     async.parallel([
-      (parallelCb) => async.each(items, (data, cb) => data[method](wrap(cb)), parallelCb),
+      (parallelCb) => async.each(items, (tile, cb) => tile[method](wrap(cb)), parallelCb),
       (parallelCb) => this.post(event, items, parallelCb),
     ], cb);
   }
 
-  match(dataA, dataB) {
+  match(tileA, tileB) {
     const {patterns, model, rows, cols} = this;
     const matches = [];
     const hash = {};
@@ -73,22 +73,22 @@ class Suit3 extends Dispatcher {
     // Drops check. Add all to hash so they cannot be destroyed
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
-        const data = model[i][j];
+        const tile = model[i][j];
 
-        if (!data || data.type !== Data.type.DROP) continue;
+        if (!tile || tile.type !== Tile.type.DROP) continue;
 
-        hash[data.id] = true;
+        hash[tile.id] = true;
 
-        if (!model[data.row + 1]) {
-          matches.push({items: [data]});
+        if (!model[tile.row + 1]) {
+          matches.push({items: [tile]});
         }
       }
     }
 
-    if (dataA && dataB) {
+    if (tileA && tileB) {
 
       // Destroy full board
-      if (dataA.type === Data.type.BOMB && dataB.type === Data.type.BOMB) {
+      if (tileA.type === Tile.type.BOMB && tileB.type === Tile.type.BOMB) {
         const items = this.items.slice();
         Pattern.markHash(items, hash);
         matches.push({items});
@@ -96,18 +96,18 @@ class Suit3 extends Dispatcher {
 
       // QUEEN destroy
       if (
-        dataA.type === Data.type.HORIZONTAL && dataB.type === Data.type.DIAGONAL ||
-        dataA.type === Data.type.DIAGONAL && dataB.type === Data.type.HORIZONTAL
+        tileA.type === Tile.type.HORIZONTAL && tileB.type === Tile.type.DIAGONAL ||
+        tileA.type === Tile.type.DIAGONAL && tileB.type === Tile.type.HORIZONTAL
       ) {
         const items = [
-          ...this.collectDirection(dataB, 0, -1, hash),
-          ...this.collectDirection(dataB, 1, 0, hash),
-          ...this.collectDirection(dataB, 0, 1, hash),
-          ...this.collectDirection(dataB, -1, 0, hash),
-          ...this.collectDirection(dataB, -1, -1, hash),
-          ...this.collectDirection(dataB, 1, -1, hash),
-          ...this.collectDirection(dataB, 1, 1, hash),
-          ...this.collectDirection(dataB, -1, 1, hash),
+          ...this.collectDirection(tileB, 0, -1, hash),
+          ...this.collectDirection(tileB, 1, 0, hash),
+          ...this.collectDirection(tileB, 0, 1, hash),
+          ...this.collectDirection(tileB, -1, 0, hash),
+          ...this.collectDirection(tileB, -1, -1, hash),
+          ...this.collectDirection(tileB, 1, -1, hash),
+          ...this.collectDirection(tileB, 1, 1, hash),
+          ...this.collectDirection(tileB, -1, 1, hash),
         ];
 
         Pattern.markHash(items, hash);
@@ -121,21 +121,21 @@ class Suit3 extends Dispatcher {
 
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
-          const data = model[i][j];
+          const tile = model[i][j];
 
-          if (!data || hash[data.id]) continue;
+          if (!tile || hash[tile.id]) continue;
 
           const match = pattern.check({
-            data,
-            dataA,
-            dataB,
+            tile,
+            tileA,
+            tileB,
             hash,
 
             directions: [
-              this.collectDirection(data, 0, -1, hash, true),
-              this.collectDirection(data, 1, 0, hash, true),
-              this.collectDirection(data, 0, 1, hash, true),
-              this.collectDirection(data, -1, 0, hash, true),
+              this.collectDirection(tile, 0, -1, hash, true),
+              this.collectDirection(tile, 1, 0, hash, true),
+              this.collectDirection(tile, 0, 1, hash, true),
+              this.collectDirection(tile, -1, 0, hash, true),
             ],
           });
 
@@ -149,7 +149,7 @@ class Suit3 extends Dispatcher {
       const match = matches[i];
       const collectedItems = [];
       const items = [...match.items];
-      match.target && items.push(match.target.data);
+      match.target && items.push(match.target.tile);
 
       for (let j = 0, jLen = items.length; j < jLen; j++) {
         const collected = this.collectAfterDestroyers(items[j], hash);
@@ -164,35 +164,35 @@ class Suit3 extends Dispatcher {
     return matches.length ? matches : null;
   }
 
-  collectAfterDestroyers(data, hash) {
+  collectAfterDestroyers(tile, hash) {
     const {model} = this;
     let collectedItems;
 
-    if (data.type === Data.type.HORIZONTAL) {
+    if (tile.type === Tile.type.HORIZONTAL) {
       collectedItems = [
-        ...this.collectDirection(data, 1, 0, hash),
-        ...this.collectDirection(data, -1, 0, hash),
+        ...this.collectDirection(tile, 1, 0, hash),
+        ...this.collectDirection(tile, -1, 0, hash),
       ];
-    } else if (data.type === Data.type.VERTICAL) {
+    } else if (tile.type === Tile.type.VERTICAL) {
       collectedItems = [
-        ...this.collectDirection(data, 0, 1, hash),
-        ...this.collectDirection(data, 0, -1, hash),
+        ...this.collectDirection(tile, 0, 1, hash),
+        ...this.collectDirection(tile, 0, -1, hash),
       ];
-    } else if (data.type === Data.type.DIAGONAL) {
+    } else if (tile.type === Tile.type.DIAGONAL) {
       collectedItems = [
-        ...this.collectDirection(data, -1, -1, hash),
-        ...this.collectDirection(data, 1, -1, hash),
-        ...this.collectDirection(data, 1, 1, hash),
-        ...this.collectDirection(data, -1, 1, hash),
+        ...this.collectDirection(tile, -1, -1, hash),
+        ...this.collectDirection(tile, 1, -1, hash),
+        ...this.collectDirection(tile, 1, 1, hash),
+        ...this.collectDirection(tile, -1, 1, hash),
       ];
-    } else if (data.type === Data.type.ROOK) {
+    } else if (tile.type === Tile.type.ROOK) {
       collectedItems = [
-        ...this.collectDirection(data, 0, -1, hash),
-        ...this.collectDirection(data, 1, 0, hash),
-        ...this.collectDirection(data, 0, 1, hash),
-        ...this.collectDirection(data, -1, 0, hash),
+        ...this.collectDirection(tile, 0, -1, hash),
+        ...this.collectDirection(tile, 1, 0, hash),
+        ...this.collectDirection(tile, 0, 1, hash),
+        ...this.collectDirection(tile, -1, 0, hash),
       ];
-    } else if (data.type === Data.type.BOMB) {
+    } else if (tile.type === Tile.type.BOMB) {
       const poses = [
         0, -1,
         1, 0,
@@ -207,8 +207,8 @@ class Suit3 extends Dispatcher {
       collectedItems = [];
 
       for (let i = 0, l = poses.length, row, col; i < l; i += 2) {
-        row = data.row + poses[i + 1];
-        col = data.col + poses[i];
+        row = tile.row + poses[i + 1];
+        col = tile.col + poses[i];
         model[row] && model[row][col] && collectedItems.push(model[row][col]);
       }
     }
@@ -233,9 +233,9 @@ class Suit3 extends Dispatcher {
     return collectedItems;
   }
 
-  collectDirection(data, stepX, stepY, hash, stopOnMiss) {
+  collectDirection(tile, stepX, stepY, hash, stopOnMiss) {
     const model = this.model;
-    const pos = {row: data.row, col: data.col};
+    const pos = {row: tile.row, col: tile.col};
     const res = [];
 
     while (true) {
@@ -247,7 +247,7 @@ class Suit3 extends Dispatcher {
         return res;
       }
 
-      if (stopOnMiss && (hash[next.id] || !this.areMatchable(data, next))) {
+      if (stopOnMiss && (hash[next.id] || !this.areMatchable(tile, next))) {
         return res;
       }
 
@@ -255,8 +255,8 @@ class Suit3 extends Dispatcher {
     }
   }
 
-  areMatchable(dataA, dataB) {
-    return dataA.color === dataB.color;
+  areMatchable(tileA, tileB) {
+    return tileA.color === tileB.color;
   }
 
   kill(matches) {
@@ -265,14 +265,14 @@ class Suit3 extends Dispatcher {
         cb => this.post(this.BEFORE_KILL, match, cb),
 
         cb => async.parallel([
-          parallelCb => async.each(match.items, (data, eachCb) => data.kill(match, wrap(eachCb)), parallelCb),
+          parallelCb => async.each(match.items, (tile, eachCb) => tile.kill(match, wrap(eachCb)), parallelCb),
           parallelCb => {
             if (!match.target) {
               return parallelCb();
             }
 
-            match.target.data.type = match.target.type;
-            match.target.data.killTarget(match, wrap(parallelCb));
+            match.target.tile.type = match.target.type;
+            match.target.tile.killTarget(match, wrap(parallelCb));
           },
           parallelCb => this.post(this.KILL, match, parallelCb),
         ], wrap(cb)),
@@ -289,7 +289,7 @@ class Suit3 extends Dispatcher {
 
     async.parallel([
       parallelCb => {
-        async.each(this.hoist(items), (data, eachCb) => data.fall(wrap(eachCb)), parallelCb);
+        async.each(this.hoist(items), (tile, eachCb) => tile.fall(wrap(eachCb)), parallelCb);
       },
 
       parallelCb => {
@@ -305,7 +305,7 @@ class Suit3 extends Dispatcher {
       if (this.normalize()) {
         return async.each(
           this.items,
-          (data, eachCb) => data.afterShuffle(wrap(eachCb)),
+          (tile, eachCb) => tile.afterShuffle(wrap(eachCb)),
           () => this.setReady(),
         );
       }
@@ -332,15 +332,15 @@ class Suit3 extends Dispatcher {
     return wasNormalized;
   }
 
-  swap(data1, data2) {
-    const {row: row1, col: col1} = data1;
-    const {row: row2, col: col2} = data2;
-    data1.row = row2;
-    data1.col = col2;
-    data2.row = row1;
-    data2.col = col1;
-    this.model[row1][col1] = data2;
-    this.model[row2][col2] = data1;
+  swap(tileA, tileB) {
+    const {row: row1, col: col1} = tileA;
+    const {row: row2, col: col2} = tileB;
+    tileA.row = row2;
+    tileA.col = col2;
+    tileB.row = row1;
+    tileB.col = col1;
+    this.model[row1][col1] = tileB;
+    this.model[row2][col2] = tileA;
   }
 
   hoist(items) {
@@ -350,47 +350,47 @@ class Suit3 extends Dispatcher {
     const hash = {};
 
     for (let i = 0, length = items.length, len2 = length * 2; i < len2; i++) {
-      const data = items[i] || items[i - length];
-      data.fallDelay = 0;
+      const tile = items[i] || items[i - length];
+      tile.fallDelay = 0;
 
       while (true) {
-        const topData = model[data.row - 1] && (
-          model[data.row - 1][data.col] ||
-          model[data.row - 1][data.col + 1] ||
-          model[data.row - 1][data.col - 1]
+        const topTile = model[tile.row - 1] && (
+          model[tile.row - 1][tile.col] ||
+          model[tile.row - 1][tile.col + 1] ||
+          model[tile.row - 1][tile.col - 1]
         );
 
-        if (!topData || (i < length && topData.col !== data.col)) break;
+        if (!topTile || (i < length && topTile.col !== tile.col)) break;
 
-        if (!hash[topData.id]) {
-          hash[topData.id] = true;
-          movedItems.push(topData);
-          topData.fallPath.x.length = 0;
-          topData.fallPath.y.length = 0;
-          topData.fallDelay = 0;
+        if (!hash[topTile.id]) {
+          hash[topTile.id] = true;
+          movedItems.push(topTile);
+          topTile.fallPath.x.length = 0;
+          topTile.fallPath.y.length = 0;
+          topTile.fallDelay = 0;
         }
 
-        topData.fallPath.x.push(data.col);
-        topData.fallPath.y.push(data.row);
-        this.swap(data, topData);
+        topTile.fallPath.x.push(tile.col);
+        topTile.fallPath.y.push(tile.row);
+        this.swap(tile, topTile);
       }
 
       if (i < length) continue;
 
-      if (!hash[data.id]) {
-        hash[data.id] = true;
-        movedItems.push(data);
+      if (!hash[tile.id]) {
+        hash[tile.id] = true;
+        movedItems.push(tile);
       }
 
-      data.fallPath.x.length = 0;
-      data.fallPath.y.length = 0;
-      data.fallPath.x.push(data.col);
-      data.fallPath.y.push(data.row);
-      data.color = Math.floor(Math.random() * colors);
-      data.type = Data.type.DEFAULT;
-      data.revive();
-      colsMap[data.col] = colsMap[data.col] || [];
-      colsMap[data.col].push(data);
+      tile.fallPath.x.length = 0;
+      tile.fallPath.y.length = 0;
+      tile.fallPath.x.push(tile.col);
+      tile.fallPath.y.push(tile.row);
+      tile.color = Math.floor(Math.random() * colors);
+      tile.type = Tile.type.DEFAULT;
+      tile.revive();
+      colsMap[tile.col] = colsMap[tile.col] || [];
+      colsMap[tile.col].push(tile);
     }
 
     for (const key in colsMap) {
@@ -406,8 +406,8 @@ class Suit3 extends Dispatcher {
     return b.row - a.row;
   }
 
-  static setFallDelay(data, index) {
-    data.fallDelay = index;
+  static setFallDelay(tile, index) {
+    tile.fallDelay = index;
   }
 
   shuffle() {
@@ -442,18 +442,18 @@ class Suit3 extends Dispatcher {
     }
   }
 
-  check(data1, data2) {
-    if (!data1 || !data2) return;
+  check(tileA, tileB) {
+    if (!tileA || !tileB) return;
 
-    this.swap(data1, data2);
+    this.swap(tileA, tileB);
     const res = this.match();
-    this.swap(data1, data2);
+    this.swap(tileA, tileB);
 
-    return res ? [data1, data2] : null;
+    return res ? [tileA, tileB] : null;
   }
 
-  static isNeighbor(data1, data2) {
-    return Math.abs(data1.row - data2.row) + Math.abs(data1.col - data2.col) === 1;
+  static isNeighbor(tileA, tileB) {
+    return Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
   }
 }
 

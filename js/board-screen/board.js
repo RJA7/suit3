@@ -17,7 +17,7 @@ export class Board extends DisplayObject {
       new Piece(this, items[i]);
     }
 
-    this.data = null;
+    this.tile = null;
     this.suit3 = suit3;
     this.touchable = true;
   }
@@ -36,7 +36,7 @@ export class Board extends DisplayObject {
     this.stage.on('pointerUp', this.handlePointerUp, this);
   }
 
-  getDataByPos(globalPos) {
+  getTileByPos(globalPos) {
     const local = this.globalToLocal(globalPos);
     const row = Math.floor(local.y / config.vOffset + 0.5);
     const col = Math.floor(local.x / config.hOffset + 0.5);
@@ -45,21 +45,21 @@ export class Board extends DisplayObject {
   }
 
   handlePointerDown(msg, pointer) {
-    this.data = this.getDataByPos(pointer) || null;
+    this.tile = this.getTileByPos(pointer) || null;
   }
 
   handlePointerUp() {
-    this.data = null;
+    this.tile = null;
   }
 
   handlePointerMove(msg, pointer) {
-    if (!this.data) return;
+    if (!this.tile) return;
 
-    const data = this.getDataByPos(pointer);
+    const tile = this.getTileByPos(pointer);
 
-    if (this.data === data) return;
+    if (this.tile === tile) return;
 
-    this.suit3.move(this.data, data);
-    this.data = null;
+    this.suit3.move(this.tile, tile);
+    this.tile = null;
   }
 }

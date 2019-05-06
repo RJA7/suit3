@@ -1,8 +1,8 @@
 import Pattern from './pattern';
-import Data from '../data';
+import Tile from '../tile';
 
 export default class LPattern extends Pattern {
-  check({directions, data, dataA, dataB, hash}) {
+  check({directions, tile, tileA, tileB, hash}) {
     for (let i = 0; i < 4; i++) {
       const dir = directions[i];
       const right = directions[i + 1] || directions[0];
@@ -12,13 +12,13 @@ export default class LPattern extends Pattern {
         res = {
           items: [...dir, ...right],
           target: {
-            data,
-            type: Data.type.DIAGONAL,
+            tile,
+            type: Tile.type.DIAGONAL,
           },
         };
 
         Pattern.markHash(res.items, hash);
-        hash[data.id] = true;
+        hash[tile.id] = true;
 
         return res;
       }

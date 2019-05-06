@@ -2,7 +2,7 @@ import {MessageDispatcher} from 'black-engine';
 
 let id = 0;
 
-export default class Data extends MessageDispatcher {
+export default class Tile extends MessageDispatcher {
   constructor(row, col, color, type) {
     super();
 
@@ -58,7 +58,7 @@ export default class Data extends MessageDispatcher {
   }
 }
 
-Data.type = {
+Tile.type = {
   DEFAULT: 0,
   VERTICAL: 1, // Spawn on matched column with 4 items. Destroy all in same column
   HORIZONTAL: 2, // Spawn on matched row with 4 items. Destroy all in same row
@@ -67,7 +67,7 @@ Data.type = {
   BOMB: 5, // Spawn on matched 5 items. Destroy all around, king like
   DROP: 6, // Destroys itself on any bottom cell.
 
-  // Dynamic (not used as type for data). No spawn, just destroy behaviour description
+  // Dynamic (not used as type for tile). No spawn, just destroy behaviour description
   QUEEN: 10, // on swap VERTICAL+HORIZONTAL. Destroy like queen
   ALL: 11, // on swap: BOMB+BOMB. Clear full board
 };

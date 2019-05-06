@@ -1,6 +1,6 @@
 export default class Pattern {
-  match({directions, dataA, dataB, hash}) {
-    return null; // {items: [data..], target: null} = matches;
+  match({directions, tileA, tileB, hash}) {
+    return null; // {items: [tile..], target: null} = matches;
   }
 
   static markHash(items, hash) {
