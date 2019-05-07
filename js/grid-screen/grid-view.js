@@ -1,20 +1,21 @@
-import {Suit3} from '../suit3-engine/suit3-engine';
-import {DisplayObject} from 'black-engine';
-import Piece from './piece';
-import config from 'js/board-screen/config';
+import { DisplayObject } from 'black-engine';
+import { Suit3 } from '../suit3-engine/suit3-engine';
+import { TileView } from './tile-view';
+import { CellView } from './cell-view';
+import { config } from './config';
 
 import level from '../levels/0';
 
-export class Board extends DisplayObject {
+export class Grid extends DisplayObject {
   constructor(parent) {
     super(parent);
     parent.add(this);
 
     const suit3 = new Suit3(level);
-    const {items} = suit3;
+    const {tiles} = suit3;
 
-    for (let i = 0, length = items.length; i < length; i++) {
-      new Piece(this, items[i]);
+    for (let i = 0, length = tiles.length; i < length; i++) {
+      new TileView(this, tiles[i]);
     }
 
     this.tile = null;
@@ -41,7 +42,7 @@ export class Board extends DisplayObject {
     const row = Math.floor(local.y / config.vOffset + 0.5);
     const col = Math.floor(local.x / config.hOffset + 0.5);
 
-    return this.suit3.model[row] && this.suit3.model[row][col];
+    return this.suit3.tilesModel[row] && this.suit3.tilesModel[row][col];
   }
 
   handlePointerDown(msg, pointer) {

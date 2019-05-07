@@ -1,10 +1,11 @@
-import Dispatcher from './dispatcher';
 import async from 'async';
-import Tile from './tile';
-import Pattern from 'js/suit3-engine/patterns/pattern';
-import TPattern from 'js/suit3-engine/patterns/t-pattern';
-import LPattern from 'js/suit3-engine/patterns/l-pattern';
-import ColorPattern from 'js/suit3-engine/patterns/color';
+import { Dispatcher } from './dispatcher';
+import { Tile } from './tile';
+import { Pattern } from './patterns/pattern';
+import { TPattern } from './patterns/t-pattern';
+import { LPattern } from './patterns/l-pattern';
+import { ColorPattern } from './patterns/color';
+import { Cell } from './cell';
 
 const wrap = cb => () => cb();
 
@@ -19,19 +20,34 @@ class Suit3 extends Dispatcher {
     super();
 
     const {colors, grid} = level;
-    const model = [];
-    const items = [];
+    const cellsModel = [];
+    const cells = [];
+    const tilesModel = [];
+    const tiles = [];
     const rows = grid.length;
     const cols = grid.reduce((acc, v) => Math.max(acc, v.length), 0);
 
-    for (let i = 0, tile; i < rows; i++) {
-      model[i] = [];
+    for (let i = 0; i < rows; i++) {
+      tilesModel[i] = [];
+      cellsModel[i] = [];
 
       for (let j = 0; j < cols; j++) {
-        const color = grid[i][j].color;
-        tile = color === null ? null : new Tile(i, j, color, grid[i][j].type);
-        tile ? items.push(tile) : '';
-        model[i][j] = tile;
+        const tileDef = grid[i][j];
+
+        if (tileDef) {
+          const tile = new Tile(i, j, tileDef.color, tileDef.type);
+          tiles.push(tile);
+          tilesModel[i][j] = tile;
+
+          const cell = new Cell(i, j, tileDef.layer);
+          cells.push(cell);
+          cellsModel[i][j] = cell;
+        } else {
+          tiles.push(null);
+          tilesModel[i][j] = null;
+          cells.push(null);
+          cellsModel[i][j] = null;
+        }
       }
     }
 
@@ -39,8 +55,10 @@ class Suit3 extends Dispatcher {
     this.colors = colors;
     this.rows = rows;
     this.cols = cols;
-    this.model = model;
-    this.items = items;
+    this.tilesModel = tilesModel;
+    this.tiles = tiles;
+    this.cellsModel = cellsModel;
+    this.cells = cells;
     this.patterns = patterns;
   }
 
@@ -53,45 +71,45 @@ class Suit3 extends Dispatcher {
     const matches = this.match(tileA, tileB);
     const method = matches ? 'move' : 'fake';
     const event = matches ? this.MOVE : this.FAKE;
-    const items = [tileA, tileB];
+    const tiles = [tileA, tileB];
     const cb = matches ? () => this.kill(matches) : () => {
       this.swap(tileA, tileB);
       this._ready = true;
     };
 
     async.parallel([
-      (parallelCb) => async.each(items, (tile, cb) => tile[method](wrap(cb)), parallelCb),
-      (parallelCb) => this.post(event, items, parallelCb),
+      (parallelCb) => async.each(tiles, (tile, cb) => tile[method](wrap(cb)), parallelCb),
+      (parallelCb) => this.post(event, tiles, parallelCb),
     ], cb);
   }
 
   match(tileA, tileB) {
-    const {patterns, model, rows, cols} = this;
+    const {patterns, tilesModel, rows, cols} = this;
     const matches = [];
     const hash = {};
 
     // Drops check. Add all to hash so they cannot be destroyed
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
-        const tile = model[i][j];
+        const tile = tilesModel[i][j];
 
         if (!tile || tile.type !== Tile.type.DROP) continue;
 
         hash[tile.id] = true;
 
-        if (!model[tile.row + 1]) {
-          matches.push({items: [tile]});
+        if (!tilesModel[tile.row + 1]) {
+          matches.push({tiles: [tile]});
         }
       }
     }
 
     if (tileA && tileB) {
 
-      // Destroy full board
+      // Destroy full grid
       if (tileA.type === Tile.type.BOMB && tileB.type === Tile.type.BOMB) {
-        const items = this.items.slice();
-        Pattern.markHash(items, hash);
-        matches.push({items});
+        const tiles = this.tiles.slice();
+        Pattern.markHash(tiles, hash);
+        matches.push({tiles});
       }
 
       // QUEEN destroy
@@ -99,7 +117,7 @@ class Suit3 extends Dispatcher {
         tileA.type === Tile.type.HORIZONTAL && tileB.type === Tile.type.DIAGONAL ||
         tileA.type === Tile.type.DIAGONAL && tileB.type === Tile.type.HORIZONTAL
       ) {
-        const items = [
+        const tiles = [
           ...this.collectDirection(tileB, 0, -1, hash),
           ...this.collectDirection(tileB, 1, 0, hash),
           ...this.collectDirection(tileB, 0, 1, hash),
@@ -110,8 +128,8 @@ class Suit3 extends Dispatcher {
           ...this.collectDirection(tileB, -1, 1, hash),
         ];
 
-        Pattern.markHash(items, hash);
-        matches.push({items});
+        Pattern.markHash(tiles, hash);
+        matches.push({tiles});
       }
     }
 
@@ -121,7 +139,7 @@ class Suit3 extends Dispatcher {
 
       for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
-          const tile = model[i][j];
+          const tile = tilesModel[i][j];
 
           if (!tile || hash[tile.id]) continue;
 
@@ -147,17 +165,17 @@ class Suit3 extends Dispatcher {
     // Remove from explosion
     for (let i = 0, iLen = matches.length; i < iLen; i++) {
       const match = matches[i];
-      const collectedItems = [];
-      const items = [...match.items];
-      match.target && items.push(match.target.tile);
+      const collectedTiles = [];
+      const tiles = [...match.tiles];
+      match.target && tiles.push(match.target.tile);
 
-      for (let j = 0, jLen = items.length; j < jLen; j++) {
-        const collected = this.collectAfterDestroyers(items[j], hash);
-        collected && collectedItems.push(...collected);
+      for (let j = 0, jLen = tiles.length; j < jLen; j++) {
+        const collected = this.collectAfterDestroyers(tiles[j], hash);
+        collected && collectedTiles.push(...collected);
       }
 
-      if (collectedItems.length) {
-        matches.push({items: collectedItems});
+      if (collectedTiles.length) {
+        matches.push({tiles: collectedTiles});
       }
     }
 
@@ -165,28 +183,28 @@ class Suit3 extends Dispatcher {
   }
 
   collectAfterDestroyers(tile, hash) {
-    const {model} = this;
-    let collectedItems;
+    const {tilesModel} = this;
+    let collectedTiles;
 
     if (tile.type === Tile.type.HORIZONTAL) {
-      collectedItems = [
+      collectedTiles = [
         ...this.collectDirection(tile, 1, 0, hash),
         ...this.collectDirection(tile, -1, 0, hash),
       ];
     } else if (tile.type === Tile.type.VERTICAL) {
-      collectedItems = [
+      collectedTiles = [
         ...this.collectDirection(tile, 0, 1, hash),
         ...this.collectDirection(tile, 0, -1, hash),
       ];
     } else if (tile.type === Tile.type.DIAGONAL) {
-      collectedItems = [
+      collectedTiles = [
         ...this.collectDirection(tile, -1, -1, hash),
         ...this.collectDirection(tile, 1, -1, hash),
         ...this.collectDirection(tile, 1, 1, hash),
         ...this.collectDirection(tile, -1, 1, hash),
       ];
     } else if (tile.type === Tile.type.ROOK) {
-      collectedItems = [
+      collectedTiles = [
         ...this.collectDirection(tile, 0, -1, hash),
         ...this.collectDirection(tile, 1, 0, hash),
         ...this.collectDirection(tile, 0, 1, hash),
@@ -204,54 +222,54 @@ class Suit3 extends Dispatcher {
         -1, 1,
       ];
 
-      collectedItems = [];
+      collectedTiles = [];
 
       for (let i = 0, l = poses.length, row, col; i < l; i += 2) {
         row = tile.row + poses[i + 1];
         col = tile.col + poses[i];
-        model[row] && model[row][col] && collectedItems.push(model[row][col]);
+        tilesModel[row] && tilesModel[row][col] && collectedTiles.push(tilesModel[row][col]);
       }
     }
 
-    if (collectedItems) {
-      collectedItems = collectedItems.filter((item) => {
-        if (hash[item.id]) {
+    if (collectedTiles) {
+      collectedTiles = collectedTiles.filter((tile) => {
+        if (hash[tile.id]) {
           return false;
         }
 
-        hash[item.id] = true;
+        hash[tile.id] = true;
 
         return true;
       });
 
-      for (let i = 0, l = collectedItems.length, items; i < l; i++) {
-        items = this.collectAfterDestroyers(collectedItems[i], hash);
-        items && collectedItems.push(...items);
+      for (let i = 0, l = collectedTiles.length, tiles; i < l; i++) {
+        tiles = this.collectAfterDestroyers(collectedTiles[i], hash);
+        tiles && collectedTiles.push(...tiles);
       }
     }
 
-    return collectedItems;
+    return collectedTiles;
   }
 
   collectDirection(tile, stepX, stepY, hash, stopOnMiss) {
-    const model = this.model;
+    const tilesModel = this.tilesModel;
     const pos = {row: tile.row, col: tile.col};
-    const res = [];
+    const result = [];
 
     while (true) {
       pos.row += stepY;
       pos.col += stepX;
-      const next = model[pos.row] && model[pos.row][pos.col];
+      const next = tilesModel[pos.row] && tilesModel[pos.row][pos.col];
 
       if (!next) {
-        return res;
+        return result;
       }
 
       if (stopOnMiss && (hash[next.id] || !this.areMatchable(tile, next))) {
-        return res;
+        return result;
       }
 
-      res.push(next);
+      result.push(next);
     }
   }
 
@@ -260,12 +278,23 @@ class Suit3 extends Dispatcher {
   }
 
   kill(matches) {
+    const {cellsModel} = this;
+
     async.each(matches, (match, eachCb) => {
       async.waterfall([
         cb => this.post(this.BEFORE_KILL, match, cb),
 
         cb => async.parallel([
-          parallelCb => async.each(match.items, (tile, eachCb) => tile.kill(match, wrap(eachCb)), parallelCb),
+          parallelCb => {
+            async.each(match.tiles, (tile, eachCb) => tile.kill(match, wrap(eachCb)), parallelCb);
+          },
+
+          parallelCb => {
+            async.each(match.tiles, (tile, eachCb) => {
+              cellsModel[tile.row][tile.col].kill(wrap(eachCb));
+            }, parallelCb);
+          },
+
           parallelCb => {
             if (!match.target) {
               return parallelCb();
@@ -281,19 +310,19 @@ class Suit3 extends Dispatcher {
   }
 
   fall(matches) {
-    const items = [];
+    const tiles = [];
 
     for (let i = 0, l = matches.length; i < l; i++) {
-      items.push(...matches[i].items);
+      tiles.push(...matches[i].tiles);
     }
 
     async.parallel([
       parallelCb => {
-        async.each(this.hoist(items), (tile, eachCb) => tile.fall(wrap(eachCb)), parallelCb);
+        async.each(this.hoist(tiles), (tile, eachCb) => tile.fall(wrap(eachCb)), parallelCb);
       },
 
       parallelCb => {
-        this.post(this.FALL, items, parallelCb);
+        this.post(this.FALL, tiles, parallelCb);
       },
     ], () => {
       const matches = this.match();
@@ -304,7 +333,7 @@ class Suit3 extends Dispatcher {
 
       if (this.normalize()) {
         return async.each(
-          this.items,
+          this.tiles,
           (tile, eachCb) => tile.afterShuffle(wrap(eachCb)),
           () => this.setReady(),
         );
@@ -339,32 +368,32 @@ class Suit3 extends Dispatcher {
     tileA.col = col2;
     tileB.row = row1;
     tileB.col = col1;
-    this.model[row1][col1] = tileB;
-    this.model[row2][col2] = tileA;
+    this.tilesModel[row1][col1] = tileB;
+    this.tilesModel[row2][col2] = tileA;
   }
 
-  hoist(items) {
-    const {colors, model} = this;
-    const movedItems = [];
+  hoist(tiles) {
+    const {colors, tilesModel} = this;
+    const movedTiles = [];
     const colsMap = {};
     const hash = {};
 
-    for (let i = 0, length = items.length, len2 = length * 2; i < len2; i++) {
-      const tile = items[i] || items[i - length];
+    for (let i = 0, length = tiles.length, len2 = length * 2; i < len2; i++) {
+      const tile = tiles[i] || tiles[i - length];
       tile.fallDelay = 0;
 
       while (true) {
-        const topTile = model[tile.row - 1] && (
-          model[tile.row - 1][tile.col] ||
-          model[tile.row - 1][tile.col + 1] ||
-          model[tile.row - 1][tile.col - 1]
+        const topTile = tilesModel[tile.row - 1] && (
+          tilesModel[tile.row - 1][tile.col] ||
+          tilesModel[tile.row - 1][tile.col + 1] ||
+          tilesModel[tile.row - 1][tile.col - 1]
         );
 
         if (!topTile || (i < length && topTile.col !== tile.col)) break;
 
         if (!hash[topTile.id]) {
           hash[topTile.id] = true;
-          movedItems.push(topTile);
+          movedTiles.push(topTile);
           topTile.fallPath.x.length = 0;
           topTile.fallPath.y.length = 0;
           topTile.fallDelay = 0;
@@ -379,7 +408,7 @@ class Suit3 extends Dispatcher {
 
       if (!hash[tile.id]) {
         hash[tile.id] = true;
-        movedItems.push(tile);
+        movedTiles.push(tile);
       }
 
       tile.fallPath.x.length = 0;
@@ -399,7 +428,7 @@ class Suit3 extends Dispatcher {
         .forEach(Suit3.setFallDelay);
     }
 
-    return movedItems;
+    return movedTiles;
   }
 
   static sort(a, b) {
@@ -411,32 +440,32 @@ class Suit3 extends Dispatcher {
   }
 
   shuffle() {
-    const {items} = this;
-    const length = items.length;
+    const {tiles} = this;
+    const length = tiles.length;
 
     for (let i = 0, newIndex; i < length; i++) {
       newIndex = Math.floor(Math.random() * length);
-      newIndex !== i && this.swap(items[i], items[newIndex]);
+      newIndex !== i && this.swap(tiles[i], tiles[newIndex]);
     }
   }
 
   findMove() {
-    const {model, rows, cols} = this;
+    const {tilesModel, rows, cols} = this;
     const randomRow = Math.random() * rows | 0;
     const randomCol = Math.random() * cols | 0;
 
-    for (let i = randomRow, res; i !== (randomRow + rows - 1) % rows; i = (i + 1) % rows) {
+    for (let i = randomRow, result; i !== (randomRow + rows - 1) % rows; i = (i + 1) % rows) {
       for (let j = randomCol; j !== (randomCol + cols - 1) % cols; j = (j + 1) % cols) {
-        res = this.check(model[i][j], model[i][j + 1]);
+        result = this.check(tilesModel[i][j], tilesModel[i][j + 1]);
 
-        if (res) {
-          return res;
+        if (result) {
+          return result;
         }
 
-        res = this.check(model[i][j], model[i + 1] && model[i + 1][j]);
+        result = this.check(tilesModel[i][j], tilesModel[i + 1] && tilesModel[i + 1][j]);
 
-        if (res) {
-          return res;
+        if (result) {
+          return result;
         }
       }
     }
@@ -446,10 +475,10 @@ class Suit3 extends Dispatcher {
     if (!tileA || !tileB) return;
 
     this.swap(tileA, tileB);
-    const res = this.match();
+    const result = this.match();
     this.swap(tileA, tileB);
 
-    return res ? [tileA, tileB] : null;
+    return result ? [tileA, tileB] : null;
   }
 
   static isNeighbor(tileA, tileB) {

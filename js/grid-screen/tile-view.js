@@ -1,13 +1,13 @@
 import {Sprite, Tween, Interpolation, Ease, TextField} from 'black-engine';
-import Tile from '../suit3-engine/tile';
-import config from './config';
+import { Tile } from '../suit3-engine/tile';
+import { config } from './config';
 
 const hOffset = config.hOffset;
 const vOffset = config.vOffset;
 
-export default class Piece extends Sprite {
+export class TileView extends Sprite {
   constructor(parent, tile) {
-    super(`piece_${tile.color}`);
+    super(`tiles/${tile.color}`);
     parent.add(this);
 
     const infoText = new TextField('', 'Arial', 0xffffff, 36);
@@ -24,7 +24,7 @@ export default class Piece extends Sprite {
     this.y = tile.row * vOffset;
     this.alignAnchor();
 
-    tile.setSprite(this);
+    tile.setView(this);
     this.refreshText();
   }
 
@@ -78,7 +78,7 @@ export default class Piece extends Sprite {
     this.x = this.tile.col * hOffset;
     this.y = (this.tile.row - 1) * vOffset;
     this.alpha = 1;
-    this.textureName = `piece_${this.tile.color}`;
+    this.textureName = `tiles/${this.tile.color}`;
 
     this.refreshText();
   }

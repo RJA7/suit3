@@ -1,6 +1,6 @@
 import { CanvasDriver, Input, Engine, StageScaleMode } from "black-engine";
-import { Game } from "./game";
 import Raven from 'raven-js';
+import { Game } from './game';
 
 const start = async () => {
   await FBInstant.initializeAsync();

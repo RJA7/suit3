@@ -2,7 +2,7 @@ import async from 'async';
 
 const wrap = cb => () => cb();
 
-class Dispatcher {
+export class Dispatcher {
   constructor() {
     this.BEFORE_KILL = 'beforeKill';
     this.MOVE = 'move';
@@ -35,5 +35,3 @@ class Dispatcher {
     }, cb);
   }
 }
-
-export default Dispatcher;

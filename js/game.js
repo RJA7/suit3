@@ -1,18 +1,13 @@
-import piece_0 from 'assets/slices/pieces/piece_0.png';
-import piece_1 from 'assets/slices/pieces/piece_1.png';
-import piece_2 from 'assets/slices/pieces/piece_2.png';
-
 import {AssetManager, GameObject} from 'black-engine';
-import {Board} from 'js/board-screen/board';
+import { Grid } from './grid-screen/grid-view';
+import atlasTexture from 'assets/sheets/atlas.png';
 
 export class Game extends GameObject {
   constructor() {
     super();
 
     const assets = new AssetManager();
-    assets.enqueueImage('piece_0', piece_0);
-    assets.enqueueImage('piece_1', piece_1);
-    assets.enqueueImage('piece_2', piece_2);
+    assets.enqueueAtlas('atlas', atlasTexture, 'assets/sheets/atlas.json');
     assets.enqueueGoogleFont('Titillium Web');
     assets.on('complete', this.create, this);
     assets.on('progress', FBInstant.setLoadingProgress, FBInstant);
@@ -26,7 +21,7 @@ export class Game extends GameObject {
   async create() {
     await FBInstant.startGameAsync();
 
-    new Board(this.stage);
+    new Grid(this.stage);
   }
 
   handleResize() {
