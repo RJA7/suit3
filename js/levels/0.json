@@ -12,15 +12,18 @@
       },
       {
         "color": 2,
-        "type": 0
+        "type": 0,
+        "layer": 2
       },
       {
         "color": 1,
-        "type": 6
+        "type": 6,
+        "layer": 2
       },
       {
         "color": 2,
-        "type": 0
+        "type": 0,
+        "layer": 2
       },
       {
         "color": 1,
@@ -38,15 +41,18 @@
       },
       {
         "color": 0,
-        "type": 0
+        "type": 0,
+        "layer": 2
       },
       {
         "color": 2,
-        "type": 0
+        "type": 0,
+        "layer": 2
       },
       {
         "color": 1,
-        "type": 0
+        "type": 0,
+        "layer": 2
       },
       {
         "color": 2,

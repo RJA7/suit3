@@ -1,7 +1,7 @@
 import { Pattern } from './pattern';
 import { Tile } from '../tile';
 
-export class Color extends Pattern {
+export class ColorPattern extends Pattern {
   check({directions, tile, tileA, tileB, hash}) {
     for (let i = 1; i < 3; i++) { // for right and bottom
       const dir = directions[i];

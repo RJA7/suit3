@@ -1,4 +1,4 @@
-import { DisplayObject } from 'black-engine';
+import { GameObject } from 'black-engine';
 import { Suit3 } from '../suit3-engine/suit3-engine';
 import { TileView } from './tile-view';
 import { CellView } from './cell-view';
@@ -6,16 +6,21 @@ import { config } from './config';
 
 import level from '../levels/0';
 
-export class Grid extends DisplayObject {
+export class Grid extends GameObject {
   constructor(parent) {
     super(parent);
     parent.add(this);
 
     const suit3 = new Suit3(level);
-    const {tiles} = suit3;
+    const {tiles, cells} = suit3;
+
+    const cellsGroup = new GameObject();
+    const tilesGroup = new GameObject();
+    this.add(cellsGroup, tilesGroup);
 
     for (let i = 0, length = tiles.length; i < length; i++) {
-      new TileView(this, tiles[i]);
+      new CellView(cellsGroup, cells[i]);
+      new TileView(tilesGroup, tiles[i]);
     }
 
     this.tile = null;

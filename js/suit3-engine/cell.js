@@ -11,7 +11,10 @@ export class Cell {
   }
 
   kill(cb) {
-    if (this.layer === 0) return;
+    if (this.layer === 0) {
+      cb();
+      return;
+    }
 
     this.layer -= 1;
     this.view.kill(cb);

@@ -213,6 +213,68 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">../slices/trash/0 - Copy (10).png</key>
+            <key type="filename">../slices/trash/0 - Copy (11).png</key>
+            <key type="filename">../slices/trash/0 - Copy (12).png</key>
+            <key type="filename">../slices/trash/0 - Copy (13).png</key>
+            <key type="filename">../slices/trash/0 - Copy (14).png</key>
+            <key type="filename">../slices/trash/0 - Copy (15).png</key>
+            <key type="filename">../slices/trash/0 - Copy (16).png</key>
+            <key type="filename">../slices/trash/0 - Copy (17).png</key>
+            <key type="filename">../slices/trash/0 - Copy (18).png</key>
+            <key type="filename">../slices/trash/0 - Copy (19).png</key>
+            <key type="filename">../slices/trash/0 - Copy (2).png</key>
+            <key type="filename">../slices/trash/0 - Copy (20).png</key>
+            <key type="filename">../slices/trash/0 - Copy (21).png</key>
+            <key type="filename">../slices/trash/0 - Copy (22).png</key>
+            <key type="filename">../slices/trash/0 - Copy (23).png</key>
+            <key type="filename">../slices/trash/0 - Copy (24).png</key>
+            <key type="filename">../slices/trash/0 - Copy (25).png</key>
+            <key type="filename">../slices/trash/0 - Copy (26).png</key>
+            <key type="filename">../slices/trash/0 - Copy (27).png</key>
+            <key type="filename">../slices/trash/0 - Copy (28).png</key>
+            <key type="filename">../slices/trash/0 - Copy (29).png</key>
+            <key type="filename">../slices/trash/0 - Copy (3).png</key>
+            <key type="filename">../slices/trash/0 - Copy (30).png</key>
+            <key type="filename">../slices/trash/0 - Copy (31).png</key>
+            <key type="filename">../slices/trash/0 - Copy (32).png</key>
+            <key type="filename">../slices/trash/0 - Copy (33).png</key>
+            <key type="filename">../slices/trash/0 - Copy (34).png</key>
+            <key type="filename">../slices/trash/0 - Copy (35).png</key>
+            <key type="filename">../slices/trash/0 - Copy (36).png</key>
+            <key type="filename">../slices/trash/0 - Copy (37).png</key>
+            <key type="filename">../slices/trash/0 - Copy (38).png</key>
+            <key type="filename">../slices/trash/0 - Copy (39).png</key>
+            <key type="filename">../slices/trash/0 - Copy (4).png</key>
+            <key type="filename">../slices/trash/0 - Copy (40).png</key>
+            <key type="filename">../slices/trash/0 - Copy (41).png</key>
+            <key type="filename">../slices/trash/0 - Copy (42).png</key>
+            <key type="filename">../slices/trash/0 - Copy (43).png</key>
+            <key type="filename">../slices/trash/0 - Copy (44).png</key>
+            <key type="filename">../slices/trash/0 - Copy (45).png</key>
+            <key type="filename">../slices/trash/0 - Copy (46).png</key>
+            <key type="filename">../slices/trash/0 - Copy (47).png</key>
+            <key type="filename">../slices/trash/0 - Copy (48).png</key>
+            <key type="filename">../slices/trash/0 - Copy (49).png</key>
+            <key type="filename">../slices/trash/0 - Copy (5).png</key>
+            <key type="filename">../slices/trash/0 - Copy (50).png</key>
+            <key type="filename">../slices/trash/0 - Copy (6).png</key>
+            <key type="filename">../slices/trash/0 - Copy (7).png</key>
+            <key type="filename">../slices/trash/0 - Copy (8).png</key>
+            <key type="filename">../slices/trash/0 - Copy (9).png</key>
+            <key type="filename">../slices/trash/0 - Copy.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,3,5,5</rect>
+                <key>scale9Paddings</key>
+                <rect>3,3,5,5</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
         </map>
         <key>fileList</key>
         <array>

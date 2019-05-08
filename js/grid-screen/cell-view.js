@@ -1,4 +1,4 @@
-import { Sprite, Tween, Interpolation, Ease, TextField } from 'black-engine';
+import { Sprite, TextField } from 'black-engine';
 import { config } from './config';
 
 const hOffset = config.hOffset;
@@ -9,23 +9,27 @@ export class CellView extends Sprite {
     super(`cells/${(cell.row + cell.col) % 2}`);
     parent.add(this);
 
-    // const infoText = new TextField('', 'Arial', 0xffffff, 36);
-    // infoText.strokeThickness = 5;
-    // infoText.strokeColor = 0x000000;
-    // infoText.x = config.hOffset / 2;
-    // infoText.y = config.vOffset / 2 + 7;
-    // infoText.alignAnchor();
-    // this.add(infoText);
-    //
-    // this.infoText = infoText;
+    const layerText = new TextField('', 'Arial', 0xffffff, 18);
+    layerText.strokeThickness = 5;
+    layerText.strokeColor = 0x000000;
+    this.add(layerText);
+
+    this.layerText = layerText;
+    this.cell = cell;
     this.x = cell.col * hOffset;
     this.y = cell.row * vOffset;
     this.alignAnchor();
 
     cell.setView(this);
+    this.refreshLayerText();
   }
 
   kill(cb) {
+    this.refreshLayerText();
     cb();
+  }
+
+  refreshLayerText() {
+    this.layerText.text = String(this.cell.layer || '');
   }
 }
