@@ -35,7 +35,7 @@ class Suit3 extends Dispatcher {
         const tileDef = grid[i][j];
 
         if (tileDef) {
-          const tile = new Tile(i, j, tileDef.color, tileDef.type);
+          const tile = new Tile(this, i, j, tileDef.color, tileDef.type);
           tiles.push(tile);
           tilesModel[i][j] = tile;
 
@@ -81,6 +81,102 @@ class Suit3 extends Dispatcher {
       (parallelCb) => async.each(tiles, (tile, cb) => tile[method](wrap(cb)), parallelCb),
       (parallelCb) => this.post(event, tiles, parallelCb),
     ], cb);
+  }
+
+  static isNeighbor(tileA, tileB) {
+    return tileA.movable() && tileB.movable() &&
+      Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
+  }
+
+  collectAfterDestroyers(tile, hash) {
+    const {tilesModel} = this;
+    let collectedTiles;
+
+    if (tile.type === Tile.type.HORIZONTAL) {
+      collectedTiles = [
+        ...this.collectDirection(tile, 1, 0, hash),
+        ...this.collectDirection(tile, -1, 0, hash),
+      ];
+    } else if (tile.type === Tile.type.VERTICAL) {
+      collectedTiles = [
+        ...this.collectDirection(tile, 0, 1, hash),
+        ...this.collectDirection(tile, 0, -1, hash),
+      ];
+    } else if (tile.type === Tile.type.DIAGONAL) {
+      collectedTiles = [
+        ...this.collectDirection(tile, -1, -1, hash),
+        ...this.collectDirection(tile, 1, -1, hash),
+        ...this.collectDirection(tile, 1, 1, hash),
+        ...this.collectDirection(tile, -1, 1, hash),
+      ];
+    } else if (tile.type === Tile.type.ROOK) {
+      collectedTiles = [
+        ...this.collectDirection(tile, 0, -1, hash),
+        ...this.collectDirection(tile, 1, 0, hash),
+        ...this.collectDirection(tile, 0, 1, hash),
+        ...this.collectDirection(tile, -1, 0, hash),
+      ];
+    } else if (tile.type === Tile.type.BOMB) {
+      const poses = [
+        0, -1,
+        1, 0,
+        0, 1,
+        -1, 0,
+        -1, -1,
+        1, -1,
+        1, 1,
+        -1, 1,
+      ];
+
+      collectedTiles = [];
+
+      for (let i = 0, l = poses.length, row, col; i < l; i += 2) {
+        row = tile.row + poses[i + 1];
+        col = tile.col + poses[i];
+        tilesModel[row] && tilesModel[row][col] && collectedTiles.push(tilesModel[row][col]);
+      }
+    }
+
+    if (collectedTiles) {
+      collectedTiles = collectedTiles.filter((tile) => {
+        if (hash[tile.id]) {
+          return false;
+        }
+
+        hash[tile.id] = true;
+
+        return true;
+      });
+
+      for (let i = 0, l = collectedTiles.length, tiles; i < l; i++) {
+        tiles = this.collectAfterDestroyers(collectedTiles[i], hash);
+        tiles && collectedTiles.push(...tiles);
+      }
+    }
+
+    return collectedTiles;
+  }
+
+  collectDirection(tile, stepX, stepY, hash, stopOnMiss) {
+    const tilesModel = this.tilesModel;
+    const pos = {row: tile.row, col: tile.col};
+    const result = [];
+
+    while (true) {
+      pos.row += stepY;
+      pos.col += stepX;
+      const next = tilesModel[pos.row] && tilesModel[pos.row][pos.col];
+
+      if (!next) {
+        return result;
+      }
+
+      if (stopOnMiss && (hash[next.id] || !this.areMatchable(tile, next))) {
+        return result;
+      }
+
+      result.push(next);
+    }
   }
 
   match(tileA, tileB) {
@@ -179,102 +275,31 @@ class Suit3 extends Dispatcher {
       }
     }
 
-    return matches.length ? matches : null;
-  }
+    // Collect immovable
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const tile = tilesModel[i][j];
 
-  collectAfterDestroyers(tile, hash) {
-    const {tilesModel} = this;
-    let collectedTiles;
+        if (!tile || hash[tile.id] || tile.movable()) continue;
 
-    if (tile.type === Tile.type.HORIZONTAL) {
-      collectedTiles = [
-        ...this.collectDirection(tile, 1, 0, hash),
-        ...this.collectDirection(tile, -1, 0, hash),
-      ];
-    } else if (tile.type === Tile.type.VERTICAL) {
-      collectedTiles = [
-        ...this.collectDirection(tile, 0, 1, hash),
-        ...this.collectDirection(tile, 0, -1, hash),
-      ];
-    } else if (tile.type === Tile.type.DIAGONAL) {
-      collectedTiles = [
-        ...this.collectDirection(tile, -1, -1, hash),
-        ...this.collectDirection(tile, 1, -1, hash),
-        ...this.collectDirection(tile, 1, 1, hash),
-        ...this.collectDirection(tile, -1, 1, hash),
-      ];
-    } else if (tile.type === Tile.type.ROOK) {
-      collectedTiles = [
-        ...this.collectDirection(tile, 0, -1, hash),
-        ...this.collectDirection(tile, 1, 0, hash),
-        ...this.collectDirection(tile, 0, 1, hash),
-        ...this.collectDirection(tile, -1, 0, hash),
-      ];
-    } else if (tile.type === Tile.type.BOMB) {
-      const poses = [
-        0, -1,
-        1, 0,
-        0, 1,
-        -1, 0,
-        -1, -1,
-        1, -1,
-        1, 1,
-        -1, 1,
-      ];
+        const left = tilesModel[tile.row][tile.col - 1];
+        const right = tilesModel[tile.row][tile.col + 1];
+        const top = tilesModel[tile.row - 1] && tilesModel[tile.row - 1][tile.col];
+        const bottom = tilesModel[tile.row + 1] && tilesModel[tile.row + 1][tile.col];
 
-      collectedTiles = [];
-
-      for (let i = 0, l = poses.length, row, col; i < l; i += 2) {
-        row = tile.row + poses[i + 1];
-        col = tile.col + poses[i];
-        tilesModel[row] && tilesModel[row][col] && collectedTiles.push(tilesModel[row][col]);
-      }
-    }
-
-    if (collectedTiles) {
-      collectedTiles = collectedTiles.filter((tile) => {
-        if (hash[tile.id]) {
-          return false;
+        if (
+          (left && left.movable() && hash[left.id]) ||
+          (right && right.movable() && hash[right.id]) ||
+          (top && top.movable() && hash[top.id]) ||
+          (bottom && bottom.movable() && hash[bottom.id])
+        ) {
+          matches.push({tiles: [tile]});
+          hash[tile.id] = true;
         }
-
-        hash[tile.id] = true;
-
-        return true;
-      });
-
-      for (let i = 0, l = collectedTiles.length, tiles; i < l; i++) {
-        tiles = this.collectAfterDestroyers(collectedTiles[i], hash);
-        tiles && collectedTiles.push(...tiles);
       }
     }
 
-    return collectedTiles;
-  }
-
-  collectDirection(tile, stepX, stepY, hash, stopOnMiss) {
-    const tilesModel = this.tilesModel;
-    const pos = {row: tile.row, col: tile.col};
-    const result = [];
-
-    while (true) {
-      pos.row += stepY;
-      pos.col += stepX;
-      const next = tilesModel[pos.row] && tilesModel[pos.row][pos.col];
-
-      if (!next) {
-        return result;
-      }
-
-      if (stopOnMiss && (hash[next.id] || !this.areMatchable(tile, next))) {
-        return result;
-      }
-
-      result.push(next);
-    }
-  }
-
-  areMatchable(tileA, tileB) {
-    return tileA.color === tileB.color;
+    return matches.length ? matches : null;
   }
 
   kill(matches) {
@@ -372,63 +397,8 @@ class Suit3 extends Dispatcher {
     this.tilesModel[row2][col2] = tileA;
   }
 
-  hoist(tiles) {
-    const {colors, tilesModel} = this;
-    const movedTiles = [];
-    const colsMap = {};
-    const hash = {};
-
-    for (let i = 0, length = tiles.length, len2 = length * 2; i < len2; i++) {
-      const tile = tiles[i] || tiles[i - length];
-      tile.fallDelay = 0;
-
-      while (true) {
-        const topTile = tilesModel[tile.row - 1] && (
-          tilesModel[tile.row - 1][tile.col] ||
-          tilesModel[tile.row - 1][tile.col + 1] ||
-          tilesModel[tile.row - 1][tile.col - 1]
-        );
-
-        if (!topTile || (i < length && topTile.col !== tile.col)) break;
-
-        if (!hash[topTile.id]) {
-          hash[topTile.id] = true;
-          movedTiles.push(topTile);
-          topTile.fallPath.x.length = 0;
-          topTile.fallPath.y.length = 0;
-          topTile.fallDelay = 0;
-        }
-
-        topTile.fallPath.x.push(tile.col);
-        topTile.fallPath.y.push(tile.row);
-        this.swap(tile, topTile);
-      }
-
-      if (i < length) continue;
-
-      if (!hash[tile.id]) {
-        hash[tile.id] = true;
-        movedTiles.push(tile);
-      }
-
-      tile.fallPath.x.length = 0;
-      tile.fallPath.y.length = 0;
-      tile.fallPath.x.push(tile.col);
-      tile.fallPath.y.push(tile.row);
-      tile.color = Math.floor(Math.random() * colors);
-      tile.type = Tile.type.DEFAULT;
-      tile.revive();
-      colsMap[tile.col] = colsMap[tile.col] || [];
-      colsMap[tile.col].push(tile);
-    }
-
-    for (const key in colsMap) {
-      colsMap[key]
-        .sort(Suit3.sort)
-        .forEach(Suit3.setFallDelay);
-    }
-
-    return movedTiles;
+  areMatchable(tileA, tileB) {
+    return tileA.movable() && tileB.movable() && tileA.color === tileB.color;
   }
 
   static sort(a, b) {
@@ -481,9 +451,69 @@ class Suit3 extends Dispatcher {
     return result ? [tileA, tileB] : null;
   }
 
-  static isNeighbor(tileA, tileB) {
-    return Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
+  hoist(tiles) {
+    const {tilesModel} = this;
+    const movedTiles = [];
+    const colsMap = {};
+    const hash = {};
+
+    for (let i = 0, length = tiles.length, len2 = length * 2; i < len2; i++) {
+      const tile = tiles[i] || tiles[i - length];
+
+      if (!tile.movable()) continue;
+
+      tile.fallDelay = 0;
+
+      while (true) {
+        const topRow = tilesModel[tile.row - 1];
+
+        if (!topRow) break;
+
+        const topTile = (
+          (topRow[tile.col] && topRow[tile.col].movable() && topRow[tile.col]) ||
+          (topRow[tile.col + 1] && topRow[tile.col + 1].movable() && topRow[tile.col + 1]) ||
+          (topRow[tile.col - 1] && topRow[tile.col - 1].movable() && topRow[tile.col - 1])
+        );
+
+        if (!topTile || (i < length && topTile.col !== tile.col)) break;
+
+        if (!hash[topTile.id]) {
+          hash[topTile.id] = true;
+          movedTiles.push(topTile);
+          topTile.fallPath.x.length = 0;
+          topTile.fallPath.y.length = 0;
+          topTile.fallDelay = 0;
+        }
+
+        topTile.fallPath.x.push(tile.col);
+        topTile.fallPath.y.push(tile.row);
+        this.swap(tile, topTile);
+      }
+
+      if (i < length) continue;
+
+      if (!hash[tile.id]) {
+        hash[tile.id] = true;
+        movedTiles.push(tile);
+      }
+
+      tile.fallPath.x.length = 0;
+      tile.fallPath.y.length = 0;
+      tile.fallPath.x.push(tile.col);
+      tile.fallPath.y.push(tile.row);
+      tile.revive();
+      colsMap[tile.col] = colsMap[tile.col] || [];
+      colsMap[tile.col].push(tile);
+    }
+
+    for (const key in colsMap) {
+      colsMap[key]
+        .sort(Suit3.sort)
+        .forEach(Suit3.setFallDelay);
+    }
+
+    return movedTiles;
   }
 }
 
-export {Suit3};
+export { Suit3 };

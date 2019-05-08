@@ -1,4 +1,4 @@
-import {Sprite, Tween, Interpolation, Ease, TextField} from 'black-engine';
+import { Sprite, Tween, Interpolation, Ease, TextField } from 'black-engine';
 import { Tile } from '../suit3-engine/tile';
 import { config } from './config';
 
@@ -7,7 +7,7 @@ const vOffset = config.vOffset;
 
 export class TileView extends Sprite {
   constructor(parent, tile) {
-    super(`tiles/${tile.color}`);
+    super(`tiles/0`);
     parent.add(this);
 
     const infoText = new TextField('', 'Arial', 0xffffff, 36);
@@ -25,6 +25,7 @@ export class TileView extends Sprite {
     this.alignAnchor();
 
     tile.setView(this);
+    this.refreshTexture();
     this.refreshText();
   }
 
@@ -68,6 +69,12 @@ export class TileView extends Sprite {
     }
   }
 
+  kick(match, cb) {
+    this.refreshTexture();
+    this.refreshText();
+    cb();
+  }
+
   killTarget(match, cb) {
     this.refreshText();
     this.parent.setChildIndex(this, this.parent.numChildren - 1);
@@ -78,9 +85,17 @@ export class TileView extends Sprite {
     this.x = this.tile.col * hOffset;
     this.y = (this.tile.row - 1) * vOffset;
     this.alpha = 1;
-    this.textureName = `tiles/${this.tile.color}`;
 
+    this.refreshTexture();
     this.refreshText();
+  }
+
+  refreshTexture() {
+    if (this.tile.movable()) {
+      this.textureName = `tiles/${this.tile.color}`;
+    } else {
+      this.textureName = `tiles/immovable_${this.tile.color}`;
+    }
   }
 
   refreshText() {
@@ -91,7 +106,8 @@ export class TileView extends Sprite {
       [Tile.type.DIAGONAL]: 'X',
       [Tile.type.ROOK]: '+',
       [Tile.type.BOMB]: 'B',
-      [Tile.type.DROP]: '↓'
+      [Tile.type.DROP]: '↓',
+      [Tile.type.IMMOVABLE]: String(this.tile.color),
     }[this.tile.type];
   }
 
