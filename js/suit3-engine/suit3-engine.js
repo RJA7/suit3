@@ -84,7 +84,7 @@ class Suit3 extends Dispatcher {
   }
 
   static isNeighbor(tileA, tileB) {
-    return tileA.movable() && tileB.movable() &&
+    return tileA.isMovable() && tileB.isMovable() &&
       Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
   }
 
@@ -161,6 +161,7 @@ class Suit3 extends Dispatcher {
     const tilesModel = this.tilesModel;
     const pos = {row: tile.row, col: tile.col};
     const result = [];
+    let current = tile;
 
     while (true) {
       pos.row += stepY;
@@ -171,11 +172,12 @@ class Suit3 extends Dispatcher {
         return result;
       }
 
-      if (stopOnMiss && (hash[next.id] || !this.areMatchable(tile, next))) {
+      if (stopOnMiss && (hash[next.id] || !this.areMatchable(current, next))) {
         return result;
       }
 
       result.push(next);
+      current = next.type === Tile.type.CHARACTER_UP ? current : next;
     }
   }
 
@@ -280,7 +282,7 @@ class Suit3 extends Dispatcher {
       for (let j = 0; j < cols; j++) {
         const tile = tilesModel[i][j];
 
-        if (!tile || hash[tile.id] || tile.movable()) continue;
+        if (!tile || hash[tile.id] || tile.isMovable()) continue;
 
         const left = tilesModel[tile.row][tile.col - 1];
         const right = tilesModel[tile.row][tile.col + 1];
@@ -288,10 +290,10 @@ class Suit3 extends Dispatcher {
         const bottom = tilesModel[tile.row + 1] && tilesModel[tile.row + 1][tile.col];
 
         if (
-          (left && left.movable() && hash[left.id]) ||
-          (right && right.movable() && hash[right.id]) ||
-          (top && top.movable() && hash[top.id]) ||
-          (bottom && bottom.movable() && hash[bottom.id])
+          (left && left.isMovable() && hash[left.id]) ||
+          (right && right.isMovable() && hash[right.id]) ||
+          (top && top.isMovable() && hash[top.id]) ||
+          (bottom && bottom.isMovable() && hash[bottom.id])
         ) {
           matches.push({tiles: [tile]});
           hash[tile.id] = true;
@@ -325,7 +327,6 @@ class Suit3 extends Dispatcher {
               return parallelCb();
             }
 
-            match.target.tile.type = match.target.type;
             match.target.tile.killTarget(match, wrap(parallelCb));
           },
           parallelCb => this.post(this.KILL, match, parallelCb),
@@ -349,23 +350,49 @@ class Suit3 extends Dispatcher {
       parallelCb => {
         this.post(this.FALL, tiles, parallelCb);
       },
-    ], () => {
-      const matches = this.match();
+    ], () => this.prepareToReady(() => this.moveCharactersUp()));
+  }
 
-      if (matches) {
-        return this.kill(matches);
+  moveCharactersUp() {
+    const {tilesModel, rows, cols} = this;
+    const movedTiles = [];
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const tile = tilesModel[i][j];
+
+        if (!tile || tile.type !== Tile.type.CHARACTER_UP) continue;
+
+        const topTile = this.getTopTile(tile);
+
+        if (!topTile) continue;
+
+        this.swap(tile, topTile);
+        movedTiles.push(tile, topTile);
       }
+    }
 
-      if (this.normalize()) {
-        return async.each(
-          this.tiles,
-          (tile, eachCb) => tile.afterShuffle(wrap(eachCb)),
-          () => this.setReady(),
-        );
-      }
+    async.each(movedTiles, (tile, eachCb) => {
+      tile.move(eachCb);
+    }, () => this.prepareToReady(() => this.setReady()));
+  }
 
-      this.setReady();
-    });
+  prepareToReady(cb) {
+    const matches = this.match();
+
+    if (matches) {
+      return this.kill(matches);
+    }
+
+    if (this.normalize()) {
+      return async.each(
+        this.tiles,
+        (tile, eachCb) => tile.afterShuffle(wrap(eachCb)),
+        () => this.setReady(),
+      );
+    }
+
+    cb();
   }
 
   setReady() {
@@ -398,7 +425,10 @@ class Suit3 extends Dispatcher {
   }
 
   areMatchable(tileA, tileB) {
-    return tileA.movable() && tileB.movable() && tileA.color === tileB.color;
+    return tileA.isMovable() && tileB.isMovable() && (
+      tileA.color === tileB.color ||
+      tileB.type === Tile.type.CHARACTER_UP
+    );
   }
 
   static sort(a, b) {
@@ -452,7 +482,6 @@ class Suit3 extends Dispatcher {
   }
 
   hoist(tiles) {
-    const {tilesModel} = this;
     const movedTiles = [];
     const colsMap = {};
     const hash = {};
@@ -460,20 +489,12 @@ class Suit3 extends Dispatcher {
     for (let i = 0, length = tiles.length, len2 = length * 2; i < len2; i++) {
       const tile = tiles[i] || tiles[i - length];
 
-      if (!tile.movable()) continue;
+      if (!tile.isMovable()) continue;
 
       tile.fallDelay = 0;
 
       while (true) {
-        const topRow = tilesModel[tile.row - 1];
-
-        if (!topRow) break;
-
-        const topTile = (
-          (topRow[tile.col] && topRow[tile.col].movable() && topRow[tile.col]) ||
-          (topRow[tile.col + 1] && topRow[tile.col + 1].movable() && topRow[tile.col + 1]) ||
-          (topRow[tile.col - 1] && topRow[tile.col - 1].movable() && topRow[tile.col - 1])
-        );
+        const topTile = this.getTopTile(tile);
 
         if (!topTile || (i < length && topTile.col !== tile.col)) break;
 
@@ -513,6 +534,21 @@ class Suit3 extends Dispatcher {
     }
 
     return movedTiles;
+  }
+
+  getTopTile(tile) {
+    const topRow = this.tilesModel[tile.row - 1];
+
+    if (!topRow) {
+      return null;
+    }
+
+    return (
+      (topRow[tile.col] && topRow[tile.col].isMovable() && topRow[tile.col]) ||
+      (topRow[tile.col + 1] && topRow[tile.col + 1].isMovable() && topRow[tile.col + 1]) ||
+      (topRow[tile.col - 1] && topRow[tile.col - 1].isMovable() && topRow[tile.col - 1]) ||
+      null
+    );
   }
 }
 

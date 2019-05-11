@@ -1,7 +1,7 @@
 let id = 0;
 
 export class Tile {
-  constructor(suit3, row, col, color, type = Tile.type.DEFAULT) {
+  constructor(suit3, row, col, color = 0, type = Tile.type.DEFAULT) {
     this.id = ++id;
     this.view = null;
     this.color = color;
@@ -29,17 +29,22 @@ export class Tile {
   }
 
   // after match, for destroy animation.
-  kill(matched, cb) {
-    if (this.movable()) {
+  kill(match, cb) {
+    if (this.type === Tile.type.IMMOVABLE) {
+      this.color -= 1;
+
+      if (this.color === -1) {
+        this.type = Tile.type.DEFAULT;
+      }
+    }
+
+    if (this.isMovable()) {
       this.color = Math.floor(Math.random() * this.suit3.colors);
       this.type = Tile.type.DEFAULT;
 
-      this.view.kill(matched, cb);
+      this.view.kill(match, cb);
     } else {
-      this.color -= 1;
-      this.type = this.color === 0 ? Tile.type.DEFAULT : this.type;
-
-      this.view.kick(matched, cb);
+      this.view.kick(match, cb);
     }
   }
 
@@ -55,6 +60,7 @@ export class Tile {
 
   // after match, for target reset type animation.
   killTarget(match, cb) { // matched = {pattern, tiles, target}
+    this.type = match.target.type;
     this.view.killTarget(match, cb); // update color type here
   }
 
@@ -63,7 +69,7 @@ export class Tile {
     this.view.afterShuffle(cb); // update pos
   }
 
-  movable() {
+  isMovable() {
     return this.type !== Tile.type.IMMOVABLE;
   }
 }
@@ -77,8 +83,9 @@ Tile.type = {
   BOMB: 5, // Spawn on matched 5 tiles. Destroy all around, king like
   DROP: 6, // Destroys itself on any bottom cell
   IMMOVABLE: 7, // Destroys if any neighbor explodes
+  CHARACTER_UP: 8, // After each move slides one cell up. If gets to top user loses
 
   // Dynamic (not used as type for tile). No spawn, just destroy behaviour description
-  QUEEN: 10, // on swap VERTICAL+HORIZONTAL. Destroy like queen
-  ALL: 11, // on swap: BOMB+BOMB. Clear full grid
+  QUEEN: 0, // on swap VERTICAL+HORIZONTAL. Destroy like queen
+  ALL: 0, // on swap: BOMB+BOMB. Clear full grid
 };

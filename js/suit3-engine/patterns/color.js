@@ -3,7 +3,7 @@ import { Tile } from '../tile';
 
 export class ColorPattern extends Pattern {
   check({directions, tile, tileA, tileB, hash}) {
-    for (let i = 1; i < 3; i++) { // for right and bottom
+    for (let i = 0; i < 4; i++) {
       const dir = directions[i];
       let result;
 

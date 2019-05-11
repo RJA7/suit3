@@ -1,5 +1,4 @@
-import { Sprite, Tween, Interpolation, Ease, TextField } from 'black-engine';
-import { Tile } from '../suit3-engine/tile';
+import { Sprite, Tween, Interpolation, Ease } from 'black-engine';
 import { config } from './config';
 
 const hOffset = config.hOffset;
@@ -7,18 +6,9 @@ const vOffset = config.vOffset;
 
 export class TileView extends Sprite {
   constructor(parent, tile) {
-    super(`tiles/0`);
+    super(`tiles/0/0`);
     parent.add(this);
 
-    const infoText = new TextField('', 'Arial', 0xffffff, 36);
-    infoText.strokeThickness = 5;
-    infoText.strokeColor = 0x000000;
-    infoText.x = config.hOffset / 2;
-    infoText.y = config.vOffset / 2 + 7;
-    infoText.alignAnchor();
-    this.add(infoText);
-
-    this.infoText = infoText;
     this.tile = tile;
     this.x = tile.col * hOffset;
     this.y = tile.row * vOffset;
@@ -26,7 +16,6 @@ export class TileView extends Sprite {
 
     tile.setView(this);
     this.refreshTexture();
-    this.refreshText();
   }
 
   move(cb) {
@@ -61,7 +50,7 @@ export class TileView extends Sprite {
       const tween = new Tween(this).to({
         x: match.target.tile.col * hOffset,
         y: match.target.tile.row * vOffset,
-      }, 0.2);
+      }, 0.9);
       tween.on('complete', () => this.hide(cb));
       this.addComponent(tween);
     } else {
@@ -71,12 +60,11 @@ export class TileView extends Sprite {
 
   kick(match, cb) {
     this.refreshTexture();
-    this.refreshText();
     cb();
   }
 
   killTarget(match, cb) {
-    this.refreshText();
+    this.refreshTexture();
     this.parent.setChildIndex(this, this.parent.numChildren - 1);
     cb();
   }
@@ -87,33 +75,15 @@ export class TileView extends Sprite {
     this.alpha = 1;
 
     this.refreshTexture();
-    this.refreshText();
   }
 
   refreshTexture() {
-    if (this.tile.movable()) {
-      this.textureName = `tiles/${this.tile.color}`;
-    } else {
-      this.textureName = `tiles/immovable_${this.tile.color}`;
-    }
-  }
-
-  refreshText() {
-    this.infoText.text = {
-      [Tile.type.DEFAULT]: '',
-      [Tile.type.HORIZONTAL]: '-',
-      [Tile.type.VERTICAL]: '|',
-      [Tile.type.DIAGONAL]: 'X',
-      [Tile.type.ROOK]: '+',
-      [Tile.type.BOMB]: 'B',
-      [Tile.type.DROP]: '↓',
-      [Tile.type.IMMOVABLE]: String(this.tile.color),
-    }[this.tile.type];
+    this.textureName = `tiles/${this.tile.type}/${this.tile.color}`;
   }
 
   fall(cb) {
     const {fallPath, fallDelay} = this.tile;
-    const stepTime = 0.1;
+    const stepTime = 0.4;
 
     const tween = new Tween({
       x: fallPath.x.map(v => v * hOffset),
