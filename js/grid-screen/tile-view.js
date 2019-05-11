@@ -1,5 +1,6 @@
 import { Sprite, Tween, Interpolation, Ease } from 'black-engine';
 import { config } from './config';
+import { Tile } from 'js/suit3-engine/tile';
 
 const hOffset = config.hOffset;
 const vOffset = config.vOffset;
@@ -78,7 +79,13 @@ export class TileView extends Sprite {
   }
 
   refreshTexture() {
-    this.textureName = `tiles/${this.tile.type}/${this.tile.color}`;
+    switch (this.tile.type) {
+      case Tile.type.IMMOVABLE:
+        this.textureName = `tiles/${this.tile.type}/${this.tile.minor}`;
+        break;
+      default:
+        this.textureName = `tiles/${this.tile.type}/${this.tile.color}`;
+    }
   }
 
   fall(cb) {

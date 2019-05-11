@@ -1,11 +1,12 @@
 let id = 0;
 
 export class Tile {
-  constructor(suit3, row, col, color = 0, type = Tile.type.DEFAULT) {
+  constructor(suit3, row, col, {color = 0, type = Tile.type.DEFAULT, minor = 0}) {
     this.id = ++id;
     this.view = null;
     this.color = color;
     this.type = type;
+    this.minor = minor;
     this.row = row;
     this.col = col;
 
@@ -31,9 +32,10 @@ export class Tile {
   // after match, for destroy animation.
   kill(match, cb) {
     if (this.type === Tile.type.IMMOVABLE) {
-      this.color -= 1;
+      this.minor -= 1;
 
-      if (this.color === -1) {
+      if (this.minor === -1) {
+        this.minor = 0;
         this.type = Tile.type.DEFAULT;
       }
     }

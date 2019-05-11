@@ -35,7 +35,7 @@ class Suit3 extends Dispatcher {
         const tileDef = grid[i][j];
 
         if (tileDef) {
-          const tile = new Tile(this, i, j, tileDef.color, tileDef.type);
+          const tile = new Tile(this, i, j, tileDef);
           tiles.push(tile);
           tilesModel[i][j] = tile;
 
