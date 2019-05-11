@@ -83,6 +83,9 @@ export class TileView extends Sprite {
       case Tile.type.IMMOVABLE:
         this.textureName = `tiles/${this.tile.type}/${this.tile.minor}`;
         break;
+      case Tile.type.BLOCKED_ELEMENT:
+        this.textureName = `tiles/${this.tile.type}/${this.tile.minor}/${this.tile.color}`;
+        break;
       default:
         this.textureName = `tiles/${this.tile.type}/${this.tile.color}`;
     }

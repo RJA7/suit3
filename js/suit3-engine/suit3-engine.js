@@ -62,8 +62,13 @@ class Suit3 extends Dispatcher {
     this.patterns = patterns;
   }
 
+  static canSwap(tileA, tileB) {
+    return tileA.isMovable() && tileB.isMovable() &&
+      Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
+  }
+
   move(tileA, tileB) {
-    if (!this._ready || !Suit3.isNeighbor(tileA, tileB)) return;
+    if (!this._ready || !Suit3.canSwap(tileA, tileB)) return;
     this._ready = false;
 
     this.swap(tileA, tileB);
@@ -81,11 +86,6 @@ class Suit3 extends Dispatcher {
       (parallelCb) => async.each(tiles, (tile, cb) => tile[method](wrap(cb)), parallelCb),
       (parallelCb) => this.post(event, tiles, parallelCb),
     ], cb);
-  }
-
-  static isNeighbor(tileA, tileB) {
-    return tileA.isMovable() && tileB.isMovable() &&
-      Math.abs(tileA.row - tileB.row) + Math.abs(tileA.col - tileB.col) === 1;
   }
 
   collectAfterDestroyers(tile, hash) {
@@ -277,12 +277,12 @@ class Suit3 extends Dispatcher {
       }
     }
 
-    // Collect immovable
+    // Collect neighbors (immovable)
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
         const tile = tilesModel[i][j];
 
-        if (!tile || hash[tile.id] || tile.isMovable()) continue;
+        if (!tile || hash[tile.id] || tile.type !== Tile.type.IMMOVABLE) continue;
 
         const left = tilesModel[tile.row][tile.col - 1];
         const right = tilesModel[tile.row][tile.col + 1];
@@ -290,10 +290,10 @@ class Suit3 extends Dispatcher {
         const bottom = tilesModel[tile.row + 1] && tilesModel[tile.row + 1][tile.col];
 
         if (
-          (left && left.isMovable() && hash[left.id]) ||
-          (right && right.isMovable() && hash[right.id]) ||
-          (top && top.isMovable() && hash[top.id]) ||
-          (bottom && bottom.isMovable() && hash[bottom.id])
+          (left && left.type !== Tile.type.IMMOVABLE && hash[left.id]) ||
+          (right && right.type !== Tile.type.IMMOVABLE && hash[right.id]) ||
+          (top && top.type !== Tile.type.IMMOVABLE && hash[top.id]) ||
+          (bottom && bottom.type !== Tile.type.IMMOVABLE && hash[bottom.id])
         ) {
           matches.push({tiles: [tile]});
           hash[tile.id] = true;
@@ -425,7 +425,7 @@ class Suit3 extends Dispatcher {
   }
 
   areMatchable(tileA, tileB) {
-    return tileA.isMovable() && tileB.isMovable() && (
+    return tileA.type !== Tile.type.IMMOVABLE && tileB.type !== Tile.type.IMMOVABLE && (
       tileA.color === tileB.color ||
       tileB.type === Tile.type.CHARACTER_UP
     );

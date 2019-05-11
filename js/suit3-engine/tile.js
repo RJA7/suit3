@@ -40,13 +40,13 @@ export class Tile {
       }
     }
 
-    if (this.isMovable()) {
+    if (this.type === Tile.type.IMMOVABLE) {
+      this.view.kick(match, cb);
+    } else {
       this.color = Math.floor(Math.random() * this.suit3.colors);
       this.type = Tile.type.DEFAULT;
 
       this.view.kill(match, cb);
-    } else {
-      this.view.kick(match, cb);
     }
   }
 
@@ -72,7 +72,7 @@ export class Tile {
   }
 
   isMovable() {
-    return this.type !== Tile.type.IMMOVABLE;
+    return this.type !== Tile.type.IMMOVABLE && this.type !== Tile.type.BLOCKED_ELEMENT;
   }
 }
 
@@ -86,6 +86,7 @@ Tile.type = {
   DROP: 6, // Destroys itself on any bottom cell
   IMMOVABLE: 7, // Destroys if any neighbor explodes
   CHARACTER_UP: 8, // After each move slides one cell up. If gets to top user loses
+  BLOCKED_ELEMENT: 9, // Can be matched as default, but is not movable
 
   // Dynamic (not used as type for tile). No spawn, just destroy behaviour description
   QUEEN: 0, // on swap VERTICAL+HORIZONTAL. Destroy like queen
