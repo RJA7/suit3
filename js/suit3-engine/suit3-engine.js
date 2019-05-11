@@ -186,14 +186,12 @@ class Suit3 extends Dispatcher {
     const matches = [];
     const hash = {};
 
-    // Drops check. Add all to hash so they cannot be destroyed
+    // Drops check
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
         const tile = tilesModel[i][j];
 
         if (!tile || tile.type !== Tile.type.DROP) continue;
-
-        hash[tile.id] = true;
 
         if (!tilesModel[tile.row + 1]) {
           matches.push({tiles: [tile]});
@@ -425,7 +423,14 @@ class Suit3 extends Dispatcher {
   }
 
   areMatchable(tileA, tileB) {
-    return tileA.type !== Tile.type.IMMOVABLE && tileB.type !== Tile.type.IMMOVABLE && (
+    if (
+      tileA.type === Tile.type.IMMOVABLE || tileB.type === Tile.type.IMMOVABLE ||
+      tileA.type === Tile.type.DROP || tileB.type === Tile.type.DROP
+    ) {
+      return false;
+    }
+
+    return (
       tileA.color === tileB.color ||
       tileB.type === Tile.type.CHARACTER_UP
     );
@@ -485,6 +490,8 @@ class Suit3 extends Dispatcher {
     const movedTiles = [];
     const colsMap = {};
     const hash = {};
+
+    tiles.sort((a, b) => a.row - b.row);
 
     for (let i = 0, length = tiles.length, len2 = length * 2; i < len2; i++) {
       const tile = tiles[i] || tiles[i - length];
